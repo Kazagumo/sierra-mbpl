@@ -20,6 +20,7 @@ endef
 
 define KernelPackage/mbpl-usb/description
 	Sierra Wireless Linux USB Mobile Broadband Drivers
+	(with qcserial usb_wwan qmi_wwan)
 endef
 
 MAKE_OPTS:= \
