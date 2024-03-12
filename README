@@ -1,0 +1,4 @@
+MBPL_DRIVERS_R35_ENG4-usb-src
+The source code under src folder is provided by sierra wireless.
+clone this repo to packages folder in openwrt build system and select it
+under kernel package - wwan suppor to use this driver.
