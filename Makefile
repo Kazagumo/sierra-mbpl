@@ -10,6 +10,10 @@ include $(INCLUDE_DIR)/package.mk
 define KernelPackage/mbpl-usb
 	SUBMENU:=WWAN Support
 	TITLE:=Sierra Wireless Linux USB Mobile Broadband Drivers
+	CONFLICTS:=\
+		kmod-usb-net-qmi-wwan \
+		kmod-usb-serial-wwan \
+		kmod-usb-serial-qualcomm
 	DEPENDS:=+kmod-usb-wdm +kmod-usb-serial +kmod-usb-net
 	FILES:=\
 		$(PKG_BUILD_DIR)/qcserial.ko \
