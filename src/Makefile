@@ -14,13 +14,27 @@ all:
 debug:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) ccflags-y="-DDEBUG"
 
+centos:
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) ccflags-y="-DCENTOS"
+
 clean:
 	rm -rf *.o *.cmd *.ko *.mod.c .tmp_versions *.o.ur-safe *.symvers *.order .cache.mk .mhi* .built-in* built-in.a *.mod
 
 install:
-	sudo cp qcserial.ko /lib/modules/`uname -r`/kernel/drivers/usb/serial/qcserial.ko
-	sudo cp usb_wwan.ko /lib/modules/`uname -r`/kernel/drivers/usb/serial/usb_wwan.ko
-	sudo cp qmi_wwan.ko /lib/modules/`uname -r`/kernel/drivers/net/usb/qmi_wwan.ko
+	if [ -f /lib/modules/`uname -r`/kernel/drivers/usb/serial/qcserial.ko.zst ]; then \
+	zstd -f qcserial.ko; sudo cp qcserial.ko.zst /lib/modules/`uname -r`/kernel/drivers/usb/serial/qcserial.ko.zst; \
+	zstd -f usb_wwan.ko; sudo cp usb_wwan.ko.zst /lib/modules/`uname -r`/kernel/drivers/usb/serial/usb_wwan.ko.zst; \
+	zstd -f qmi_wwan.ko; sudo cp qmi_wwan.ko.zst /lib/modules/`uname -r`/kernel/drivers/net/usb/qmi_wwan.ko.zst; \
+	elif [ -f /lib/modules/`uname -r`/kernel/drivers/usb/serial/qcserial.ko.xz ]; then \
+		xz -z -f qcserial.ko; sudo cp qcserial.ko.xz /lib/modules/`uname -r`/kernel/drivers/usb/serial/qcserial.ko.xz; \
+		xz -z -f usb_wwan.ko; sudo cp usb_wwan.ko.xz /lib/modules/`uname -r`/kernel/drivers/usb/serial/usb_wwan.ko.xz; \
+		xz -z -f qmi_wwan.ko; sudo cp qmi_wwan.ko.xz /lib/modules/`uname -r`/kernel/drivers/net/usb/qmi_wwan.ko.xz; \
+	else \
+	sudo cp qcserial.ko /lib/modules/`uname -r`/kernel/drivers/usb/serial/qcserial.ko; \
+	sudo cp usb_wwan.ko /lib/modules/`uname -r`/kernel/drivers/usb/serial/usb_wwan.ko; \
+	sudo cp qmi_wwan.ko /lib/modules/`uname -r`/kernel/drivers/net/usb/qmi_wwan.ko; \
+	fi 
+	
 	sudo depmod
 	
 

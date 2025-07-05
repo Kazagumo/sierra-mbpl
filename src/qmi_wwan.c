@@ -25,7 +25,11 @@
 #include <linux/sched/signal.h>
 #endif 
 
-bool debug = false;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,2,0)
+#include <linux/kstrtox.h>
+#endif 
+
+static bool debug = false;
 
 module_param(debug, bool, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 MODULE_PARM_DESC(debug,"enable/disable driver logging");
@@ -193,6 +197,16 @@ struct rtnl_link_stats64* qmimux_get_stats64(struct net_device *net,
 
 		stats64 = per_cpu_ptr(priv->stats64, cpu);
 
+#ifdef CENTOS
+		do {
+			start = u64_stats_fetch_begin(&stats64->syncp);
+			rx_packets = u64_stats_read(&stats64->rx_packets);
+			rx_bytes = u64_stats_read(&stats64->rx_bytes);
+			tx_packets = u64_stats_read(&stats64->tx_packets);
+			tx_bytes = u64_stats_read(&stats64->tx_bytes);
+		} while (u64_stats_fetch_retry(&stats64->syncp, start));
+
+#else
 		do {
 			start = u64_stats_fetch_begin_irq(&stats64->syncp);
 			rx_packets = stats64->rx_packets;
@@ -200,7 +214,7 @@ struct rtnl_link_stats64* qmimux_get_stats64(struct net_device *net,
 			tx_packets = stats64->tx_packets;
 			tx_bytes = stats64->tx_bytes;
 		} while (u64_stats_fetch_retry_irq(&stats64->syncp, start));
-
+#endif
 		stats->rx_packets += rx_packets;
 		stats->rx_bytes += rx_bytes;
 		stats->tx_packets += tx_packets;
@@ -457,8 +471,13 @@ static ssize_t raw_ip_store(struct device *d,  struct device_attribute *attr, co
 	bool enable;
 	int ret;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,2,0)
+	if (kstrtobool(buf, &enable))
+		return -EINVAL;
+#else
 	if (strtobool(buf, &enable))
 		return -EINVAL;
+#endif 
 
 	/* no change? */
 	if (enable == (info->flags & QMI_WWAN_FLAG_RAWIP))
@@ -1541,6 +1560,8 @@ static const struct usb_device_id products[] = {
 	{QMI_QUIRK_SET_DTR_QMI_8K(0x1199, 0x90d3, 8)},	/* Sierra Wireless EM919X RmNET */	
 	{QMI_QUIRK_SET_DTR_QMI_8K(0x1199, 0x90e1, 8)},	/* Sierra Wireless EM929X RmNET */	
 	{QMI_QUIRK_SET_DTR_QMI_8K(0x1199, 0x90e3, 8)},	/* Sierra Wireless EM929X RmNET */	
+	{QMI_QUIRK_SET_DTR_QMI_8K(0x1199, 0x90e5, 8)},	/* Sierra Wireless EM8695 RmNET */	
+	{QMI_QUIRK_SET_DTR_QMI_8K(0x1199, 0xc081, 8)},	/* Sierra Wireless EM7590 */
 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
 	{QMI_FIXED_INTF(0x1bbb, 0x0203, 2)},	/* Alcatel L800MA */
 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
@@ -1653,6 +1674,8 @@ static const struct usb_device_id products[] = {
 	{QMI_GOBI_DEVICE(0x12d1, 0x14f1)},	/* Sony Gobi 3000 Composite */
 	{QMI_GOBI_DEVICE(0x1410, 0xa021)},	/* Foxconn Gobi 3000 Modem device (Novatel E396) */
 
+	{QMI_QUIRK_SET_DTR(0x05c6, 0x90b8, 2)},	/* SDX35 */
+
 	{ }					/* END */
 };
 MODULE_DEVICE_TABLE(usb, products);
@@ -1761,4 +1784,4 @@ module_usb_driver(qmi_wwan_driver);
 MODULE_AUTHOR("Bjørn Mork <bjorn@mork.no>");
 MODULE_DESCRIPTION("Qualcomm MSM Interface (QMI) WWAN driver");
 MODULE_LICENSE("GPL");
-MODULE_VERSION("1.10.2308.3");
+MODULE_VERSION("1.15.2504.1");
